@@ -15,7 +15,9 @@ final class PreloadFeaturedImageFactory
 
         return new PreloadFeaturedImage(
             $config->array('preload_featured_image'),
-            $container->get(PreloadImageUrlFilterInterface::class),
+            $container->has(PreloadImageUrlFilterInterface::class)
+                ? $container->get(PreloadImageUrlFilterInterface::class)
+                : null,
         );
     }
 }
