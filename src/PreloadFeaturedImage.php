@@ -8,14 +8,14 @@ use Kaiseki\WordPress\Hook\HookProviderInterface;
 
 use function add_action;
 use function add_filter;
-use function array_keys;
+use function array_key_exists;
 use function esc_attr;
 use function explode;
 use function get_post_thumbnail_id;
 use function get_post_type;
 use function implode;
-use function in_array;
 use function is_singular;
+use function is_string;
 use function remove_filter;
 use function sprintf;
 use function wp_get_attachment_image;
@@ -23,7 +23,7 @@ use function wp_get_attachment_image;
 final class PreloadFeaturedImage implements HookProviderInterface
 {
     /**
-     * @param array<string, string>           $config
+     * @param array<array-key, mixed>         $config
      * @param ?PreloadImageUrlFilterInterface $urlFilter
      */
     public function __construct(
@@ -45,11 +45,17 @@ final class PreloadFeaturedImage implements HookProviderInterface
 
         $postType = get_post_type();
 
-        if (!in_array($postType, array_keys($this->config), true)) {
+        if ($postType === false || !array_key_exists($postType, $this->config)) {
             return;
         }
 
-        $this->renderWithImageSize($this->config[$postType]);
+        $imageSize = $this->config[$postType];
+
+        if (!is_string($imageSize)) {
+            return;
+        }
+
+        $this->renderWithImageSize($imageSize);
     }
 
     private function renderWithImageSize(string $imageSize): void
@@ -67,6 +73,11 @@ final class PreloadFeaturedImage implements HookProviderInterface
     {
         $imageAttr = [];
 
+        /**
+         * @param array<string, mixed> $attributes
+         *
+         * @return array<string, mixed>
+         */
         $writeAttributeCallback = function (array $attributes) use (&$imageAttr): array {
             $imageAttr = $attributes;
 
@@ -83,22 +94,28 @@ final class PreloadFeaturedImage implements HookProviderInterface
 
         remove_filter('wp_get_attachment_image_attributes', $writeAttributeCallback, 999);
 
-        if (!isset($imageAttr['src'])) {
+        $src = $imageAttr['src'] ?? null;
+
+        if (!is_string($src)) {
             return '';
         }
 
         $linkAttr = [
             'rel' => 'preload',
             'as' => 'image',
-            'href' => $imageAttr['src'],
+            'href' => $src,
         ];
 
-        if (isset($imageAttr['srcset'])) {
-            $linkAttr['imagesrcset'] = $this->processSrcSet($imageAttr['srcset']);
+        $srcSet = $imageAttr['srcset'] ?? null;
+
+        if (is_string($srcSet)) {
+            $linkAttr['imagesrcset'] = $this->processSrcSet($srcSet);
         }
 
-        if (isset($imageAttr['sizes'])) {
-            $linkAttr['imagesizes'] = $imageAttr['sizes'];
+        $sizes = $imageAttr['sizes'] ?? null;
+
+        if (is_string($sizes)) {
+            $linkAttr['imagesizes'] = $sizes;
         }
 
         return sprintf('<link %s>', $this->renderAttributes($linkAttr));

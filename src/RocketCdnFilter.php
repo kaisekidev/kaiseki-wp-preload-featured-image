@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kaiseki\WordPress\PreloadFeaturedImage;
 
 use function function_exists;
-// @phpstan-ignore-next-line
 use function get_rocket_cdn_url;
 
 final class RocketCdnFilter implements PreloadImageUrlFilterInterface

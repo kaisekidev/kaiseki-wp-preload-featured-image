@@ -14,9 +14,10 @@ final class PreloadFeaturedImageFactory
         $config = Config::fromContainer($container);
 
         return new PreloadFeaturedImage(
-            // @phpstan-ignore-next-line
             $config->array('preload_featured_image'),
-            $container->get(PreloadImageUrlFilterInterface::class),
+            $container->has(PreloadImageUrlFilterInterface::class)
+                ? $container->get(PreloadImageUrlFilterInterface::class)
+                : null,
         );
     }
 }
